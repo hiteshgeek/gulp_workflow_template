@@ -33,8 +33,6 @@ const config = {
   assetsImagesDir: "src/assets/images",
   libCssDir: "src/library/scss",
   libJsDir: "src/library/js",
-  commonCssDir: "src/common/scss",
-  commonJsDir: "src/common/js",
   nodeDir: "node_modules",
 
   // Output directories - Library (dist/)
@@ -47,11 +45,6 @@ const config = {
   assetsJsOutDir: "assets/js",
   assetsManifestPath: "assets/rev/manifest.json",
   imagesOutDir: "assets/images",
-
-  // Output directories - Common (dist/common/)
-  commonCssOutDir: "dist/common/css",
-  commonJsOutDir: "dist/common/js",
-  commonManifestPath: "dist/common/rev/manifest.json",
 };
 
 // Utility: Remove old hashed files not in manifest
@@ -120,129 +113,6 @@ function onError(err) {
 // External dependencies (loaded via CDN, not bundled)
 const externalDeps = ["echarts"];
 const externalGlobals = { echarts: "echarts" };
-
-// =============================================================================
-// COMMON STYLES (src/common/scss -> dist/common/css)
-// =============================================================================
-
-function commonStyles() {
-  return gulp
-    .src(config.commonCssDir + "/main.scss")
-    .pipe(plugins.plumber({ errorHandler: onError }))
-    .pipe(useSourceMaps() ? plugins.sourcemaps.init() : noop())
-    .pipe(sass())
-    .pipe(postcss([autoprefixer()]))
-    .pipe(plugins.concat("common.css"))
-    .pipe(isProduction() ? plugins.cleanCss() : noop())
-    .pipe(useVersioning() ? rev() : noop())
-    .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
-    .pipe(gulp.dest(config.commonCssOutDir))
-    .pipe(
-      useVersioning()
-        ? rev.manifest(config.commonManifestPath, {
-            base: "dist/common/rev",
-            merge: true,
-          })
-        : noop()
-    )
-    .pipe(useVersioning() ? gulp.dest("dist/common/rev") : noop());
-}
-
-// =============================================================================
-// COMMON SCRIPTS (src/common/js -> dist/common/js)
-// =============================================================================
-
-function commonScriptsESM() {
-  return rollupStream({
-    input: config.commonJsDir + "/index.js",
-    external: externalDeps,
-    plugins: [
-      rollupReplace({
-        preventAssignment: true,
-        "process.env.NODE_ENV": JSON.stringify(
-          isProduction() ? "production" : "development"
-        ),
-      }),
-      rollupResolve({ browser: true }),
-      rollupCommonjs(),
-      rollupBabel({
-        babelHelpers: "bundled",
-        babelrc: false,
-        exclude: "node_modules/**",
-      }),
-    ],
-    output: { format: "esm", inlineDynamicImports: true },
-  })
-    .pipe(source("common.js"))
-    .pipe(buffer())
-    .pipe(plugins.plumber({ errorHandler: onError }))
-    .pipe(
-      useSourceMaps() ? plugins.sourcemaps.init({ loadMaps: true }) : noop()
-    )
-    .pipe(isProduction() ? uglify() : noop())
-    .pipe(isProduction() ? javascriptObfuscator() : noop())
-    .pipe(useVersioning() ? rev() : noop())
-    .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
-    .pipe(gulp.dest(config.commonJsOutDir))
-    .pipe(
-      useVersioning()
-        ? rev.manifest(config.commonManifestPath, {
-            base: "dist/common/rev",
-            merge: true,
-          })
-        : noop()
-    )
-    .pipe(useVersioning() ? gulp.dest("dist/common/rev") : noop());
-}
-
-function commonScriptsIIFE() {
-  return rollupStream({
-    input: config.commonJsDir + "/index.js",
-    external: externalDeps,
-    plugins: [
-      rollupReplace({
-        preventAssignment: true,
-        "process.env.NODE_ENV": JSON.stringify(
-          isProduction() ? "production" : "development"
-        ),
-      }),
-      rollupResolve({ browser: true }),
-      rollupCommonjs(),
-      rollupBabel({
-        babelHelpers: "bundled",
-        babelrc: false,
-        exclude: "node_modules/**",
-      }),
-    ],
-    output: {
-      format: "iife",
-      name: "Common",
-      globals: externalGlobals,
-      exports: "named",
-      inlineDynamicImports: true,
-    },
-  })
-    .pipe(source("common.iife.js"))
-    .pipe(buffer())
-    .pipe(plugins.plumber({ errorHandler: onError }))
-    .pipe(
-      useSourceMaps() ? plugins.sourcemaps.init({ loadMaps: true }) : noop()
-    )
-    .pipe(isProduction() ? uglify() : noop())
-    .pipe(isProduction() ? javascriptObfuscator() : noop())
-    .pipe(useVersioning() ? rev() : noop())
-    .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
-    .pipe(gulp.dest(config.commonJsOutDir))
-    .pipe(
-      useVersioning()
-        ? rev.manifest(config.commonManifestPath, {
-            base: "dist/common/rev",
-            merge: true,
-          })
-        : noop()
-    )
-    .pipe(useVersioning() ? gulp.dest("dist/common/rev") : noop());
-}
 
 // =============================================================================
 // LIBRARY STYLES (src/library/scss -> dist/css)
@@ -502,11 +372,7 @@ gulp.task("clean-assets", async function () {
   await rimraf("assets/{css,js,rev}/**", { glob: true });
 });
 
-gulp.task("clean-common", async function () {
-  await rimraf("dist/common/**", { glob: true });
-});
-
-gulp.task("clean", gulp.parallel("clean-lib", "clean-assets", "clean-common"));
+gulp.task("clean", gulp.parallel("clean-lib", "clean-assets"));
 
 // =============================================================================
 // CLEANUP OLD VERSIONED FILES
@@ -527,14 +393,6 @@ gulp.task(
 gulp.task(
   "clean-old-assets-js",
   cleanupOldFiles(config.assetsJsOutDir, config.assetsManifestPath, ".js")
-);
-gulp.task(
-  "clean-old-common-css",
-  cleanupOldFiles(config.commonCssOutDir, config.commonManifestPath, ".css")
-);
-gulp.task(
-  "clean-old-common-js",
-  cleanupOldFiles(config.commonJsOutDir, config.commonManifestPath, ".js")
 );
 
 // =============================================================================
@@ -568,15 +426,6 @@ gulp.task(
   gulp.series(assetsScriptsESM, assetsScriptsIIFE, "clean-old-assets-js")
 );
 gulp.task("assets", gulp.parallel("assets:styles", "assets:scripts", "images"));
-
-// Common tasks
-gulp.task("common:styles", gulp.series(commonStyles, "clean-old-common-css"));
-// Note: ESM and IIFE must run sequentially to avoid manifest merge race condition
-gulp.task(
-  "common:scripts",
-  gulp.series(commonScriptsESM, commonScriptsIIFE, "clean-old-common-js")
-);
-gulp.task("common", gulp.parallel("common:styles", "common:scripts"));
 
 // =============================================================================
 // BROWSERSYNC
@@ -615,14 +464,6 @@ gulp.task("watch", function () {
     config.assetsJsDir + "/**/*.js",
     gulp.series("assets:scripts", reload)
   );
-  gulp.watch(
-    config.commonCssDir + "/**/*.scss",
-    gulp.series("common:styles", reload)
-  );
-  gulp.watch(
-    config.commonJsDir + "/**/*.js",
-    gulp.series("common:scripts", reload)
-  );
   // Watch PHP/HTML files for reload
   gulp.watch("**/*.php").on("change", browserSync.reload);
   gulp.watch("**/*.html").on("change", browserSync.reload);
@@ -632,16 +473,16 @@ gulp.task("watch", function () {
 // MAIN TASKS
 // =============================================================================
 
-gulp.task("dev", gulp.series("clean", gulp.parallel("lib", "assets", "common")));
+gulp.task("dev", gulp.series("clean", gulp.parallel("lib", "assets")));
 gulp.task("dev-with-watch", gulp.series("dev", "watch"));
 gulp.task("dev-serve", gulp.series("dev", "serve", "watch")); // Dev with BrowserSync
 gulp.task(
   "prod",
-  gulp.series(setProdEnv, "clean", gulp.parallel("lib", "assets", "common"))
+  gulp.series(setProdEnv, "clean", gulp.parallel("lib", "assets"))
 );
 gulp.task(
   "dev-noversion",
-  gulp.series(setNoVersionMode, "clean", gulp.parallel("lib", "assets", "common"))
+  gulp.series(setNoVersionMode, "clean", gulp.parallel("lib", "assets"))
 );
 
 gulp.task("default", gulp.series("dev"));

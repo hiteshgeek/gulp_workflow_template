@@ -3,7 +3,9 @@ node_modules/
 
 # Build output
 dist/
-assets/
+assets/css/
+assets/js/
+assets/rev/
 build/
 
 # Logs
