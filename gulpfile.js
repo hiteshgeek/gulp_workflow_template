@@ -55,6 +55,12 @@ const config = {
   themeSwitcherFileName: "theme-switcher",
   themeSwitcherCssDir: "src/library/theme-switcher/scss",
   themeSwitcherJsDir: "src/library/theme-switcher/js",
+
+  // Tooltip component
+  tooltipName: "Tooltip",
+  tooltipFileName: "tooltip",
+  tooltipCssDir: "src/library/tooltip/scss",
+  tooltipJsDir: "src/library/tooltip/js",
 };
 
 // Utility: Remove old hashed files not in manifest
@@ -65,7 +71,19 @@ function cleanupOldFiles(dir, manifestPath, ext) {
         done && done();
         return;
       }
-      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+
+      // Read manifest with error handling for corrupt JSON
+      let manifest;
+      try {
+        const content = fs.readFileSync(manifestPath, "utf8");
+        manifest = JSON.parse(content);
+      } catch (parseError) {
+        // Manifest is corrupt, skip cleanup but don't fail the build
+        console.warn("[Cleanup] Warning: Could not parse manifest, skipping cleanup");
+        done && done();
+        return;
+      }
+
       const keepFiles = new Set(Object.values(manifest));
       if (!fs.existsSync(dir)) {
         done && done();
@@ -83,8 +101,9 @@ function cleanupOldFiles(dir, manifestPath, ext) {
       }
       done && done();
     } catch (e) {
-      console.error("[Cleanup] Error:", e);
-      done && done(e);
+      // Don't fail the build for cleanup errors
+      console.warn("[Cleanup] Warning:", e.message);
+      done && done();
     }
   };
 }
@@ -485,6 +504,120 @@ function themeSwitcherScriptsIIFE() {
 }
 
 // =============================================================================
+// TOOLTIP (src/library/tooltip -> dist/)
+// =============================================================================
+
+function tooltipStyles() {
+  return gulp
+    .src(config.tooltipCssDir + "/main.scss")
+    .pipe(plugins.plumber({ errorHandler: onError }))
+    .pipe(useSourceMaps() ? plugins.sourcemaps.init() : noop())
+    .pipe(sass({ includePaths: config.sassIncludePaths }))
+    .pipe(postcss([autoprefixer()]))
+    .pipe(plugins.concat(config.tooltipFileName + ".css"))
+    .pipe(isProduction() ? plugins.cleanCss() : noop())
+    .pipe(useVersioning() ? rev() : noop())
+    .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
+    .pipe(gulp.dest(config.libCssOutDir))
+    .pipe(
+      useVersioning()
+        ? rev.manifest(config.libManifestPath, {
+            base: "dist/rev",
+            merge: true,
+          })
+        : noop()
+    )
+    .pipe(useVersioning() ? gulp.dest("dist/rev") : noop());
+}
+
+function tooltipScriptsESM() {
+  return rollupStream({
+    input: config.tooltipJsDir + "/index.js",
+    plugins: [
+      rollupReplace({
+        preventAssignment: true,
+        "process.env.NODE_ENV": JSON.stringify(
+          isProduction() ? "production" : "development"
+        ),
+      }),
+      rollupResolve({ browser: true }),
+      rollupCommonjs(),
+      rollupBabel({
+        babelHelpers: "bundled",
+        babelrc: false,
+        exclude: "node_modules/**",
+      }),
+    ],
+    output: { format: "esm", inlineDynamicImports: true },
+  })
+    .pipe(source(config.tooltipFileName + ".js"))
+    .pipe(buffer())
+    .pipe(plugins.plumber({ errorHandler: onError }))
+    .pipe(
+      useSourceMaps() ? plugins.sourcemaps.init({ loadMaps: true }) : noop()
+    )
+    .pipe(isProduction() ? uglify() : noop())
+    .pipe(useVersioning() ? rev() : noop())
+    .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
+    .pipe(gulp.dest(config.libJsOutDir))
+    .pipe(
+      useVersioning()
+        ? rev.manifest(config.libManifestPath, {
+            base: "dist/rev",
+            merge: true,
+          })
+        : noop()
+    )
+    .pipe(useVersioning() ? gulp.dest("dist/rev") : noop());
+}
+
+function tooltipScriptsIIFE() {
+  return rollupStream({
+    input: config.tooltipJsDir + "/index.js",
+    plugins: [
+      rollupReplace({
+        preventAssignment: true,
+        "process.env.NODE_ENV": JSON.stringify(
+          isProduction() ? "production" : "development"
+        ),
+      }),
+      rollupResolve({ browser: true }),
+      rollupCommonjs(),
+      rollupBabel({
+        babelHelpers: "bundled",
+        babelrc: false,
+        exclude: "node_modules/**",
+      }),
+    ],
+    output: {
+      format: "iife",
+      name: config.tooltipName,
+      exports: "named",
+      inlineDynamicImports: true,
+    },
+  })
+    .pipe(source(config.tooltipFileName + ".iife.js"))
+    .pipe(buffer())
+    .pipe(plugins.plumber({ errorHandler: onError }))
+    .pipe(
+      useSourceMaps() ? plugins.sourcemaps.init({ loadMaps: true }) : noop()
+    )
+    .pipe(isProduction() ? uglify() : noop())
+    .pipe(useVersioning() ? rev() : noop())
+    .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
+    .pipe(gulp.dest(config.libJsOutDir))
+    .pipe(
+      useVersioning()
+        ? rev.manifest(config.libManifestPath, {
+            base: "dist/rev",
+            merge: true,
+          })
+        : noop()
+    )
+    .pipe(useVersioning() ? gulp.dest("dist/rev") : noop());
+}
+
+// =============================================================================
 // CLEAN TASKS
 // =============================================================================
 
@@ -557,7 +690,17 @@ gulp.task(
   "theme-switcher:scripts",
   gulp.series(themeSwitcherScriptsESM, themeSwitcherScriptsIIFE, "clean-old-lib-js")
 );
-gulp.task("theme-switcher", gulp.parallel("theme-switcher:styles", "theme-switcher:scripts"));
+// Note: styles and scripts run sequentially to avoid manifest race conditions
+gulp.task("theme-switcher", gulp.series("theme-switcher:styles", "theme-switcher:scripts"));
+
+// Tooltip tasks
+gulp.task("tooltip:styles", gulp.series(tooltipStyles, "clean-old-lib-css"));
+gulp.task(
+  "tooltip:scripts",
+  gulp.series(tooltipScriptsESM, tooltipScriptsIIFE, "clean-old-lib-js")
+);
+// Note: styles and scripts run sequentially to avoid manifest race conditions
+gulp.task("tooltip", gulp.series("tooltip:styles", "tooltip:scripts"));
 
 // =============================================================================
 // BROWSERSYNC
@@ -609,6 +752,16 @@ gulp.task("watch", function () {
     gulp.series("theme-switcher:scripts", reload)
   );
 
+  // Watch and rebuild - Tooltip (including common folder)
+  gulp.watch(
+    [config.tooltipCssDir + "/**/*.scss", "src/library/common/scss/**/*.scss"],
+    gulp.series("tooltip:styles", reload)
+  );
+  gulp.watch(
+    [config.tooltipJsDir + "/**/*.js", "src/library/common/js/**/*.js"],
+    gulp.series("tooltip:scripts", reload)
+  );
+
   // Watch PHP/HTML files for reload
   gulp.watch("**/*.php").on("change", browserSync.reload);
   gulp.watch("**/*.html").on("change", browserSync.reload);
@@ -618,16 +771,18 @@ gulp.task("watch", function () {
 // MAIN TASKS
 // =============================================================================
 
-gulp.task("dev", gulp.series("clean", gulp.parallel("assets", "theme-switcher")));
+// Note: Library components (theme-switcher, tooltip) run sequentially to avoid manifest race conditions
+// Assets can run in parallel since they use a separate manifest
+gulp.task("dev", gulp.series("clean", gulp.parallel("assets", gulp.series("theme-switcher", "tooltip"))));
 gulp.task("dev-with-watch", gulp.series("dev", "watch"));
 gulp.task("dev-serve", gulp.series("dev", "serve", "watch")); // Dev with BrowserSync
 gulp.task(
   "prod",
-  gulp.series(setProdEnv, "clean", gulp.parallel("assets", "theme-switcher"))
+  gulp.series(setProdEnv, "clean", gulp.parallel("assets", gulp.series("theme-switcher", "tooltip")))
 );
 gulp.task(
   "dev-noversion",
-  gulp.series(setNoVersionMode, "clean", gulp.parallel("assets", "theme-switcher"))
+  gulp.series(setNoVersionMode, "clean", gulp.parallel("assets", gulp.series("theme-switcher", "tooltip")))
 );
 
 gulp.task("default", gulp.series("dev"));

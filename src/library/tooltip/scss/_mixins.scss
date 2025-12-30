@@ -1,0 +1,21 @@
+// ============================================================================
+// TOOLTIP MIXINS
+// ============================================================================
+@use "sass:list";
+
+// ============================================================================
+// GENERIC TRANSITION MIXIN
+// ============================================================================
+@mixin transition($properties...) {
+  $transition-list: ();
+
+  @each $property in $properties {
+    $transition-list: list.append(
+      $transition-list,
+      #{$property} 0.2s ease-in-out,
+      comma
+    );
+  }
+
+  transition: $transition-list;
+}
