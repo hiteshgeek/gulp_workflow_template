@@ -410,4 +410,170 @@ const instance = Tooltip.Tooltip.getInstance(element);</code></div>
     <li><strong>Screen readers:</strong> Tooltip content is announced when focus trigger is used</li>
 </ul>
 
+<hr>
+
+<h2>Folder Structure</h2>
+<p>The tooltip component follows a modular architecture. Here's how the source files are organized:</p>
+
+<div class="code-block"><code>src/library/tooltip/
+├── js/
+│   ├── core/
+│   │   ├── constants.js    # Configuration constants
+│   │   ├── position.js     # Positioning logic
+│   │   └── tooltip.js      # Main Tooltip class
+│   └── index.js            # Entry point
+└── scss/
+    ├── base/
+    │   └── _tooltip.scss   # All tooltip styles
+    ├── _mixins.scss        # SCSS mixins
+    └── main.scss           # Entry point</code></div>
+
+<hr>
+
+<h2>Source Files Explained</h2>
+
+<h3>JavaScript Files</h3>
+
+<div class="demo-box">
+    <h4><code>js/index.js</code> - Entry Point</h4>
+    <p>The main entry point that gets bundled into the final output file.</p>
+    <ul class="file-list">
+        <li><strong>Auto-initialization:</strong> Automatically finds all <code>[data-tooltip]</code> elements on DOMContentLoaded</li>
+        <li><strong>parseDataAttributes():</strong> Reads data-* attributes and converts them to options object</li>
+        <li><strong>init(container):</strong> Initialize tooltips within a specific container (useful for dynamic content)</li>
+        <li><strong>destroyAll(container):</strong> Destroy all tooltip instances in a container</li>
+        <li><strong>Exports:</strong> Tooltip class, POSITIONS, TRIGGERS, DEFAULTS constants</li>
+    </ul>
+</div>
+
+<div class="demo-box">
+    <h4><code>js/core/constants.js</code> - Configuration Constants</h4>
+    <p>Defines all configuration values used throughout the component.</p>
+    <ul class="file-list">
+        <li><strong>POSITIONS:</strong> <code>{ TOP: 'top', BOTTOM: 'bottom', LEFT: 'left', RIGHT: 'right' }</code></li>
+        <li><strong>TRIGGERS:</strong> <code>{ HOVER: 'hover', FOCUS: 'focus', CLICK: 'click' }</code></li>
+        <li><strong>DEFAULTS:</strong> Default options (position: top, trigger: hover, delay: 0, offset: 8, etc.)</li>
+        <li><strong>CLASSES:</strong> CSS class names (tooltip, tooltip__arrow, tooltip--visible, etc.)</li>
+        <li><strong>DATA_ATTRIBUTES:</strong> HTML attribute names (data-tooltip, data-tooltip-position, etc.)</li>
+    </ul>
+</div>
+
+<div class="demo-box">
+    <h4><code>js/core/position.js</code> - Positioning Logic</h4>
+    <p>Handles all tooltip positioning calculations with smart auto-flip.</p>
+    <ul class="file-list">
+        <li><strong>calculatePosition():</strong> Calculates top/left coordinates based on trigger element and desired position</li>
+        <li><strong>getOptimalPosition():</strong> Determines best position - tries preferred, then opposite, then others</li>
+        <li><strong>fitsInViewport():</strong> Checks if tooltip fits at a given position without overflow</li>
+        <li><strong>applyPosition():</strong> Applies coordinates and position CSS class to tooltip element</li>
+        <li><strong>clampToViewport():</strong> Constrains coordinates to keep tooltip within viewport bounds</li>
+    </ul>
+</div>
+
+<div class="demo-box">
+    <h4><code>js/core/tooltip.js</code> - Main Tooltip Class</h4>
+    <p>The core Tooltip class with all functionality.</p>
+    <ul class="file-list">
+        <li><strong>constructor(trigger, options):</strong> Creates tooltip instance, stores in WeakMap for retrieval</li>
+        <li><strong>_createTooltipElement():</strong> Creates the tooltip DOM structure (div + arrow + text)</li>
+        <li><strong>_setupAccessibility():</strong> Adds aria-describedby, tabindex for a11y</li>
+        <li><strong>_bindEvents():</strong> Attaches mouseenter/leave, focus/blur, click handlers based on trigger type</li>
+        <li><strong>show() / hide() / toggle():</strong> Controls tooltip visibility with animations</li>
+        <li><strong>setContent() / setOptions():</strong> Updates tooltip dynamically</li>
+        <li><strong>enable() / disable():</strong> Temporarily enable/disable the tooltip</li>
+        <li><strong>destroy():</strong> Removes tooltip completely, cleans up events and DOM</li>
+        <li><strong>static getInstance():</strong> Retrieves existing tooltip instance for an element</li>
+        <li><strong>Events:</strong> Dispatches 8 custom events (show, shown, inserted, hide, hidden, enabled, disabled, disposed)</li>
+    </ul>
+</div>
+
+<h3>SCSS Files</h3>
+
+<div class="demo-box">
+    <h4><code>scss/main.scss</code> - Entry Point</h4>
+    <p>Simple entry point that imports the base tooltip styles.</p>
+    <div class="code-block"><code>@use 'base/tooltip';</code></div>
+</div>
+
+<div class="demo-box">
+    <h4><code>scss/_mixins.scss</code> - SCSS Mixins</h4>
+    <p>Component-specific mixins (kept separate from common mixins for modularity).</p>
+    <ul class="file-list">
+        <li><strong>transition($properties...):</strong> Generates transition CSS with 0.2s ease-in-out timing</li>
+    </ul>
+</div>
+
+<div class="demo-box">
+    <h4><code>scss/base/_tooltip.scss</code> - All Tooltip Styles</h4>
+    <p>Complete styling for the tooltip component.</p>
+    <ul class="file-list">
+        <li><strong>CSS Variables (dark theme default):</strong>
+            <ul>
+                <li><code>--tooltip-bg</code> - Background color (semi-transparent dark)</li>
+                <li><code>--tooltip-text</code> - Text color (white)</li>
+                <li><code>--tooltip-border</code> - Border color</li>
+                <li><code>--tooltip-shadow</code> - Box shadow</li>
+                <li><code>--tooltip-arrow-color</code> - Arrow color</li>
+                <li><code>--tooltip-shortcut-*</code> - Shortcut badge colors</li>
+            </ul>
+        </li>
+        <li><strong>[data-theme="light"] overrides:</strong> Light tooltip variant for light theme</li>
+        <li><strong>.tooltip:</strong> Base styles (fixed position, backdrop blur, rounded corners)</li>
+        <li><strong>.tooltip--visible:</strong> Visible state (opacity 1, display flex)</li>
+        <li><strong>.tooltip--top/bottom/left/right:</strong> Position-specific animations</li>
+        <li><strong>.tooltip__arrow:</strong> CSS triangle arrow using borders</li>
+        <li><strong>.tooltip__text:</strong> Text content wrapper</li>
+        <li><strong>.tooltip__shortcut:</strong> Keyboard shortcut badge styling</li>
+    </ul>
+</div>
+
+<hr>
+
+<h2>Output Files (dist/)</h2>
+<p>After building, these files are generated in the <code>dist/</code> folder:</p>
+
+<div class="demo-box">
+    <ul class="file-list">
+        <li>
+            <code>dist/css/tooltip-[hash].css</code>
+            <span class="badge badge--css">CSS</span>
+            <br><small>Compiled CSS with all styles. Include in &lt;head&gt;.</small>
+        </li>
+        <li>
+            <code>dist/js/tooltip-[hash].js</code>
+            <span class="badge badge--js">ESM</span>
+            <br><small>ES Module format. Use with <code>import { Tooltip } from './tooltip.js'</code></small>
+        </li>
+        <li>
+            <code>dist/js/tooltip-[hash].iife.js</code>
+            <span class="badge badge--js">IIFE</span>
+            <br><small>Browser bundle. Creates global <code>window.Tooltip</code> object. Best for simple &lt;script&gt; include.</small>
+        </li>
+        <li>
+            <code>dist/css/tooltip-[hash].css.map</code>
+            <br><small>Source map for CSS debugging.</small>
+        </li>
+        <li>
+            <code>dist/js/tooltip-[hash].js.map</code>
+            <br><small>Source map for JS debugging.</small>
+        </li>
+    </ul>
+</div>
+
+<hr>
+
+<h2>Plug &amp; Play Usage</h2>
+<p>The tooltip is <strong>fully standalone</strong> with zero external dependencies. To use in any project:</p>
+
+<div class="code-block"><code>&lt;!-- 1. Include CSS in &lt;head&gt; --&gt;
+&lt;link rel="stylesheet" href="path/to/tooltip.css"&gt;
+
+&lt;!-- 2. Include JS before &lt;/body&gt; --&gt;
+&lt;script src="path/to/tooltip.iife.js"&gt;&lt;/script&gt;
+
+&lt;!-- 3. Add data-tooltip to any element --&gt;
+&lt;button data-tooltip="Hello!"&gt;Hover me&lt;/button&gt;
+
+&lt;!-- That's it! Tooltips auto-initialize on page load. --&gt;</code></div>
+
 <?php require_once BASE_PATH . '/includes/demo-footer.php'; ?>
