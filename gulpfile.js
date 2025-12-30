@@ -31,9 +31,13 @@ const config = {
   assetsCssDir: "src/assets/scss",
   assetsJsDir: "src/assets/js",
   assetsImagesDir: "src/assets/images",
+  libDir: "src/library",
   libCssDir: "src/library/scss",
   libJsDir: "src/library/js",
   nodeDir: "node_modules",
+
+  // Sass include paths (for clean @use imports)
+  sassIncludePaths: [path.resolve(__dirname, "src/library")],
 
   // Output directories - Library (dist/)
   libCssOutDir: "dist/css",
@@ -45,6 +49,12 @@ const config = {
   assetsJsOutDir: "assets/js",
   assetsManifestPath: "assets/rev/manifest.json",
   imagesOutDir: "assets/images",
+
+  // Theme Switcher component
+  themeSwitcherName: "ThemeSwitcher",
+  themeSwitcherFileName: "theme-switcher",
+  themeSwitcherCssDir: "src/library/theme-switcher/scss",
+  themeSwitcherJsDir: "src/library/theme-switcher/js",
 };
 
 // Utility: Remove old hashed files not in manifest
@@ -123,7 +133,7 @@ function libStyles() {
     .src(config.libCssDir + "/main.scss")
     .pipe(plugins.plumber({ errorHandler: onError }))
     .pipe(useSourceMaps() ? plugins.sourcemaps.init() : noop())
-    .pipe(sass())
+    .pipe(sass({ includePaths: config.sassIncludePaths }))
     .pipe(postcss([autoprefixer()]))
     .pipe(plugins.concat(config.libFileName + ".css"))
     .pipe(isProduction() ? plugins.cleanCss() : noop())
@@ -246,7 +256,7 @@ function assetsStyles() {
     .src(config.assetsCssDir + "/main.scss")
     .pipe(plugins.plumber({ errorHandler: onError }))
     .pipe(useSourceMaps() ? plugins.sourcemaps.init() : noop())
-    .pipe(sass())
+    .pipe(sass({ includePaths: config.sassIncludePaths }))
     .pipe(postcss([autoprefixer()]))
     .pipe(plugins.concat("main.css"))
     .pipe(isProduction() ? plugins.cleanCss() : noop())
@@ -361,6 +371,120 @@ function assetsScriptsIIFE() {
 }
 
 // =============================================================================
+// THEME SWITCHER (src/library/theme-switcher -> dist/)
+// =============================================================================
+
+function themeSwitcherStyles() {
+  return gulp
+    .src(config.themeSwitcherCssDir + "/main.scss")
+    .pipe(plugins.plumber({ errorHandler: onError }))
+    .pipe(useSourceMaps() ? plugins.sourcemaps.init() : noop())
+    .pipe(sass({ includePaths: config.sassIncludePaths }))
+    .pipe(postcss([autoprefixer()]))
+    .pipe(plugins.concat(config.themeSwitcherFileName + ".css"))
+    .pipe(isProduction() ? plugins.cleanCss() : noop())
+    .pipe(useVersioning() ? rev() : noop())
+    .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
+    .pipe(gulp.dest(config.libCssOutDir))
+    .pipe(
+      useVersioning()
+        ? rev.manifest(config.libManifestPath, {
+            base: "dist/rev",
+            merge: true,
+          })
+        : noop()
+    )
+    .pipe(useVersioning() ? gulp.dest("dist/rev") : noop());
+}
+
+function themeSwitcherScriptsESM() {
+  return rollupStream({
+    input: config.themeSwitcherJsDir + "/index.js",
+    plugins: [
+      rollupReplace({
+        preventAssignment: true,
+        "process.env.NODE_ENV": JSON.stringify(
+          isProduction() ? "production" : "development"
+        ),
+      }),
+      rollupResolve({ browser: true }),
+      rollupCommonjs(),
+      rollupBabel({
+        babelHelpers: "bundled",
+        babelrc: false,
+        exclude: "node_modules/**",
+      }),
+    ],
+    output: { format: "esm", inlineDynamicImports: true },
+  })
+    .pipe(source(config.themeSwitcherFileName + ".js"))
+    .pipe(buffer())
+    .pipe(plugins.plumber({ errorHandler: onError }))
+    .pipe(
+      useSourceMaps() ? plugins.sourcemaps.init({ loadMaps: true }) : noop()
+    )
+    .pipe(isProduction() ? uglify() : noop())
+    .pipe(useVersioning() ? rev() : noop())
+    .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
+    .pipe(gulp.dest(config.libJsOutDir))
+    .pipe(
+      useVersioning()
+        ? rev.manifest(config.libManifestPath, {
+            base: "dist/rev",
+            merge: true,
+          })
+        : noop()
+    )
+    .pipe(useVersioning() ? gulp.dest("dist/rev") : noop());
+}
+
+function themeSwitcherScriptsIIFE() {
+  return rollupStream({
+    input: config.themeSwitcherJsDir + "/index.js",
+    plugins: [
+      rollupReplace({
+        preventAssignment: true,
+        "process.env.NODE_ENV": JSON.stringify(
+          isProduction() ? "production" : "development"
+        ),
+      }),
+      rollupResolve({ browser: true }),
+      rollupCommonjs(),
+      rollupBabel({
+        babelHelpers: "bundled",
+        babelrc: false,
+        exclude: "node_modules/**",
+      }),
+    ],
+    output: {
+      format: "iife",
+      name: config.themeSwitcherName,
+      exports: "named",
+      inlineDynamicImports: true,
+    },
+  })
+    .pipe(source(config.themeSwitcherFileName + ".iife.js"))
+    .pipe(buffer())
+    .pipe(plugins.plumber({ errorHandler: onError }))
+    .pipe(
+      useSourceMaps() ? plugins.sourcemaps.init({ loadMaps: true }) : noop()
+    )
+    .pipe(isProduction() ? uglify() : noop())
+    .pipe(useVersioning() ? rev() : noop())
+    .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
+    .pipe(gulp.dest(config.libJsOutDir))
+    .pipe(
+      useVersioning()
+        ? rev.manifest(config.libManifestPath, {
+            base: "dist/rev",
+            merge: true,
+          })
+        : noop()
+    )
+    .pipe(useVersioning() ? gulp.dest("dist/rev") : noop());
+}
+
+// =============================================================================
 // CLEAN TASKS
 // =============================================================================
 
@@ -427,6 +551,14 @@ gulp.task(
 );
 gulp.task("assets", gulp.parallel("assets:styles", "assets:scripts", "images"));
 
+// Theme Switcher tasks
+gulp.task("theme-switcher:styles", gulp.series(themeSwitcherStyles, "clean-old-lib-css"));
+gulp.task(
+  "theme-switcher:scripts",
+  gulp.series(themeSwitcherScriptsESM, themeSwitcherScriptsIIFE, "clean-old-lib-js")
+);
+gulp.task("theme-switcher", gulp.parallel("theme-switcher:styles", "theme-switcher:scripts"));
+
 // =============================================================================
 // BROWSERSYNC
 // =============================================================================
@@ -450,12 +582,14 @@ function reload(done) {
 // =============================================================================
 
 gulp.task("watch", function () {
-  // Watch and rebuild
+  // Watch and rebuild - Library
   gulp.watch(
     config.libCssDir + "/**/*.scss",
     gulp.series("lib:styles", reload)
   );
   gulp.watch(config.libJsDir + "/**/*.js", gulp.series("lib:scripts", reload));
+
+  // Watch and rebuild - Assets
   gulp.watch(
     config.assetsCssDir + "/**/*.scss",
     gulp.series("assets:styles", reload)
@@ -464,6 +598,17 @@ gulp.task("watch", function () {
     config.assetsJsDir + "/**/*.js",
     gulp.series("assets:scripts", reload)
   );
+
+  // Watch and rebuild - Theme Switcher (including common folder)
+  gulp.watch(
+    [config.themeSwitcherCssDir + "/**/*.scss", "src/library/common/scss/**/*.scss"],
+    gulp.series("theme-switcher:styles", reload)
+  );
+  gulp.watch(
+    [config.themeSwitcherJsDir + "/**/*.js", "src/library/common/js/**/*.js"],
+    gulp.series("theme-switcher:scripts", reload)
+  );
+
   // Watch PHP/HTML files for reload
   gulp.watch("**/*.php").on("change", browserSync.reload);
   gulp.watch("**/*.html").on("change", browserSync.reload);
@@ -473,16 +618,16 @@ gulp.task("watch", function () {
 // MAIN TASKS
 // =============================================================================
 
-gulp.task("dev", gulp.series("clean", gulp.parallel("lib", "assets")));
+gulp.task("dev", gulp.series("clean", gulp.parallel("lib", "assets", "theme-switcher")));
 gulp.task("dev-with-watch", gulp.series("dev", "watch"));
 gulp.task("dev-serve", gulp.series("dev", "serve", "watch")); // Dev with BrowserSync
 gulp.task(
   "prod",
-  gulp.series(setProdEnv, "clean", gulp.parallel("lib", "assets"))
+  gulp.series(setProdEnv, "clean", gulp.parallel("lib", "assets", "theme-switcher"))
 );
 gulp.task(
   "dev-noversion",
-  gulp.series(setNoVersionMode, "clean", gulp.parallel("lib", "assets"))
+  gulp.series(setNoVersionMode, "clean", gulp.parallel("lib", "assets", "theme-switcher"))
 );
 
 gulp.task("default", gulp.series("dev"));

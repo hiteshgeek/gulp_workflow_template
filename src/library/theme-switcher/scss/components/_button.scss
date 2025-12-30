@@ -1,0 +1,54 @@
+// Theme Switcher Button
+// ======================
+// Floating toggle button with sun/moon/system icons
+
+@use '../../../common/scss' as common;
+
+.theme-switcher {
+  // Button base styles
+  @include common.button-reset;
+  @include common.flex-center;
+  @include common.size(44px);
+
+  position: fixed;
+  bottom: common.$spacing-lg;
+  right: common.$spacing-lg;
+  z-index: common.$z-index-fixed;
+
+  background-color: var(--theme-text);
+  color: var(--theme-bg);
+  border-radius: common.$border-radius-full;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  @include common.transition(background-color, color, transform);
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  // Icon styles - hide all by default
+  &__icon {
+    @include common.size(common.$icon-size);
+    @include common.transition(opacity, transform);
+    display: none;
+  }
+
+  // Show sun icon when in light mode (indicates current state)
+  &[data-mode='light'] &__icon--sun {
+    display: block;
+  }
+
+  // Show moon icon when in dark mode
+  &[data-mode='dark'] &__icon--moon {
+    display: block;
+  }
+
+  // Show system icon when in system mode
+  &[data-mode='system'] &__icon--system {
+    display: block;
+  }
+}

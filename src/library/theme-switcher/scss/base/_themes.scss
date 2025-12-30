@@ -1,0 +1,22 @@
+// Theme Definitions
+// ==================
+// CSS custom properties for light and dark themes
+// Applied to :root based on data-theme attribute
+
+@use '../../../common/scss' as common;
+
+// Light theme (default)
+[data-theme='light'] {
+  --theme-bg: #{common.$color-light-bg};
+  --theme-text: #{common.$color-light-text};
+  --theme-primary: #{common.$color-primary};
+  --theme-primary-hover: #{common.$color-primary-hover};
+}
+
+// Dark theme
+[data-theme='dark'] {
+  --theme-bg: #{common.$color-dark-bg};
+  --theme-text: #{common.$color-dark-text};
+  --theme-primary: #{common.$color-primary};
+  --theme-primary-hover: #{common.$color-primary-hover};
+}

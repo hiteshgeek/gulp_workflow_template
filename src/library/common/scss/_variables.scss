@@ -1,0 +1,52 @@
+// Common Variables
+// =================
+// Shared defaults for all library components
+// Override these in your project before importing components
+
+// -----------------------------------------------------------------------------
+// Colors
+// -----------------------------------------------------------------------------
+$color-light-bg: #ffffff !default;
+$color-light-text: #1a1a1a !default;
+$color-dark-bg: #1a1a1a !default;
+$color-dark-text: #f5f5f5 !default;
+
+$color-primary: #3b82f6 !default;
+$color-primary-hover: #2563eb !default;
+
+// -----------------------------------------------------------------------------
+// Transitions
+// -----------------------------------------------------------------------------
+$transition-duration: 0.3s !default;
+$transition-easing: ease-in-out !default;
+
+// -----------------------------------------------------------------------------
+// Spacing
+// -----------------------------------------------------------------------------
+$spacing-xs: 4px !default;
+$spacing-sm: 8px !default;
+$spacing-md: 16px !default;
+$spacing-lg: 24px !default;
+$spacing-xl: 32px !default;
+
+// -----------------------------------------------------------------------------
+// Border Radius
+// -----------------------------------------------------------------------------
+$border-radius-sm: 4px !default;
+$border-radius-md: 8px !default;
+$border-radius-lg: 16px !default;
+$border-radius-full: 50% !default;
+
+// -----------------------------------------------------------------------------
+// Z-Index Scale
+// -----------------------------------------------------------------------------
+$z-index-dropdown: 100 !default;
+$z-index-sticky: 200 !default;
+$z-index-fixed: 300 !default;
+$z-index-modal: 400 !default;
+$z-index-tooltip: 500 !default;
+
+// -----------------------------------------------------------------------------
+// Icons
+// -----------------------------------------------------------------------------
+$icon-size: 24px !default;

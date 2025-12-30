@@ -1,0 +1,9 @@
+// Theme Switcher - Main Entry Point
+// ===================================
+// A modular, standalone theme switcher component
+
+// Base (theme definitions with CSS custom properties)
+@use 'base/themes';
+
+// Components (button styles)
+@use 'components/button';

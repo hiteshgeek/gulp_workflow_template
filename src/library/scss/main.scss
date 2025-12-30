@@ -1,7 +1,6 @@
-// Library SCSS entry point
-// Build reusable library styles here that get output to dist/
+// Library Main Stylesheet
+// ========================
+// Entry point for all library components
 
-// Example:
-// @import 'variables';
-// @import 'mixins';
-// @import 'components';
+// Import theme-switcher component
+@forward '../theme-switcher/scss/main';

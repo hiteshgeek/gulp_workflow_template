@@ -1,6 +1,6 @@
-// Library JavaScript entry point
-// Build reusable library code here that gets output to dist/
+// Library Main Entry Point
+// =========================
+// Entry point for all library components
 
-// Example exports:
-// export function myFunction() {}
-// export class MyClass {}
+// Re-export theme-switcher
+export * from '../theme-switcher/js/index.js';
