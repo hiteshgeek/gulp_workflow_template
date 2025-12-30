@@ -618,16 +618,16 @@ gulp.task("watch", function () {
 // MAIN TASKS
 // =============================================================================
 
-gulp.task("dev", gulp.series("clean", gulp.parallel("lib", "assets", "theme-switcher")));
+gulp.task("dev", gulp.series("clean", gulp.parallel("assets", "theme-switcher")));
 gulp.task("dev-with-watch", gulp.series("dev", "watch"));
 gulp.task("dev-serve", gulp.series("dev", "serve", "watch")); // Dev with BrowserSync
 gulp.task(
   "prod",
-  gulp.series(setProdEnv, "clean", gulp.parallel("lib", "assets", "theme-switcher"))
+  gulp.series(setProdEnv, "clean", gulp.parallel("assets", "theme-switcher"))
 );
 gulp.task(
   "dev-noversion",
-  gulp.series(setNoVersionMode, "clean", gulp.parallel("lib", "assets", "theme-switcher"))
+  gulp.series(setNoVersionMode, "clean", gulp.parallel("assets", "theme-switcher"))
 );
 
 gulp.task("default", gulp.series("dev"));
